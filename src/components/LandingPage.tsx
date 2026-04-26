@@ -151,7 +151,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="footer">
         <div className="container">
-          <p>© 2024 American Diploma Test Master. MIT Licensed. Open source and community-driven.</p>
+          <p>© {new Date().getFullYear()} American Diploma Test Master. MIT Licensed. Open source.</p>
         </div>
       </footer>
     </div>
