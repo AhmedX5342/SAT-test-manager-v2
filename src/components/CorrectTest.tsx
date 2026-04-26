@@ -2,8 +2,9 @@ import { useState } from 'react';
 import type { Test, Corrections } from '../types';
 import './CorrectTest.css';
 
-const GEMMA_API_KEY = 'AIzaSyBab22ZcBxl0CPVAi5eFYXjupKRSfKdKOY';
-const GEMMA_MODEL = 'gemma-3-27b-it';
+// Get API credentials from environment variables
+const GEMMA_API_KEY = import.meta.env.VITE_GEMMA_API_KEY;
+const GEMMA_MODEL = import.meta.env.VITE_GEMMA_MODEL;
 
 interface CorrectionResult {
   corrections: Corrections;
@@ -12,6 +13,11 @@ interface CorrectionResult {
 }
 
 async function correctWithAI(userAnswers: { [key: number]: string | null }, answerKey: string, numQuestions: number): Promise<CorrectionResult> {
+  // Validate API key is configured
+  if (!GEMMA_API_KEY) {
+    throw new Error('API key not configured. Please check your environment variables.');
+  }
+
   const prompt = `You are grading an SAT/MCQ practice test. The student's answers and the answer key are provided below. Compare them and return a JSON object.
 
 Number of questions: ${numQuestions}
@@ -43,6 +49,7 @@ Where for each question number (as string key), "correct" is a boolean, and "cor
   });
 
   if (response.status === 429) throw new Error('RATE_LIMIT');
+  if (response.status === 403) throw new Error('INVALID_API_KEY');
   if (!response.ok) throw new Error(`API_ERROR_${response.status}`);
 
   const data = await response.json();
@@ -74,6 +81,8 @@ export default function CorrectTest({ test, onSave, onClose }: CorrectTestProps)
       const error = e as Error;
       if (error.message === 'RATE_LIMIT') {
         setError('You are being rate limited by the AI service. Please wait a few minutes and try again.');
+      } else if (error.message === 'INVALID_API_KEY') {
+        setError('Invalid API key. Please check your configuration.');
       } else {
         setError('An error occurred while correcting the test. Please check your connection and try again.');
       }

@@ -54,6 +54,15 @@ Then open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
+## Environment Setup
+
+For AI correction feature to work, you need to configure your Google Gemma API key:
+
+1. Get an API key from [Google AI Studio](https://aistudio.google.com/)
+2. Create a `.env` file in the project root and add your api key
+
+---
+
 ## Feedback & Bug Reports
 
 Found a bug? Have a feature idea? Please reach out — your feedback shapes this app.
