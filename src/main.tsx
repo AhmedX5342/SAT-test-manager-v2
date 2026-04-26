@@ -20,4 +20,4 @@ createRoot(rootElement).render(
       </DataProvider>
     </BrowserRouter>
   </StrictMode>,
-);
+)

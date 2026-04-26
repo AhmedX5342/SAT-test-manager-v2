@@ -704,8 +704,8 @@ kbd {
   cursor: pointer;
 }
 
-.brand-icon { font-size: 1.2rem; }
-.brand-name { letter-spacing: -0.02em; }
+/* .brand-icon { font-size: 1.2rem; }
+.brand-name { letter-spacing: -0.02em; } */
 
 /* Desktop Navigation */
 .tab-nav {
@@ -904,4 +904,77 @@ kbd {
     padding-left: 16px;
     padding-right: 16px;
   }
+}
+.brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.brand:hover {
+  opacity: 0.8;
+}
+
+.brand-logo {
+  height: 45px;
+  width: auto;
+  display: block;
+}
+
+/* Adjust for different screen sizes */
+@media (max-width: 768px) {
+  .brand-logo {
+    height: 38px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-logo {
+    height: 32px;
+  }
+}
+
+/* Make header slightly taller to accommodate logo if needed */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px; /* Increased from 60px to 70px */
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  background: rgba(var(--bg2-rgb, 255,255,255), 0.9);
+}
+
+/* Update header inner padding */
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+/* Update mobile nav top position to match new header height */
+.mobile-nav {
+  position: absolute;
+  top: 70px; /* Match new header height */
+  left: 0;
+  right: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 4px;
+  animation: slideDown 0.3s ease;
+  z-index: 99;
+  box-shadow: var(--shadow);
 }

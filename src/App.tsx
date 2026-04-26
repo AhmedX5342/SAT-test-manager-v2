@@ -4,7 +4,6 @@ import Hamburger from 'hamburger-react';
 import Home from './pages/Home';
 import Tests from './pages/Tests';
 import Settings from './pages/Settings';
-import Support from './pages/Support';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import './App.css';
 
@@ -12,7 +11,6 @@ const TABS = [
   { id: 'home', label: 'Home', icon: '📊', path: '/app' },
   { id: 'tests', label: 'Test Management', icon: '📝', path: '/app/tests' },
   { id: 'settings', label: 'Settings', icon: '⚙️', path: '/app/settings' },
-  { id: 'support', label: 'Support', icon: '💡', path: '/app/support' },
 ];
 
 export default function App() {
@@ -27,7 +25,6 @@ export default function App() {
     if (path === '/app' || path === '/app/') return 'home';
     if (path === '/app/tests') return 'tests';
     if (path === '/app/settings') return 'settings';
-    if (path === '/app/support') return 'support';
     return 'home';
   };
 
@@ -52,6 +49,11 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobileMenuOpen]);
 
+  const handleLogoClick = () => {
+    navigate('/');
+    setIsMobileMenuOpen(false);
+  };
+
   const handleTabChange = (tabId: string, path: string) => {
     setActiveTab(tabId);
     navigate(path);
@@ -66,9 +68,12 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-inner">
-          <div className="brand" onClick={() => handleTabChange('home', '/app')}>
-            <span className="brand-icon">✦</span>
-            <span className="brand-name">American Diploma Test Master</span>
+          <div className="brand" onClick={handleLogoClick}>
+            <img 
+              src="/logo.png" 
+              alt="American Diploma Test Master" 
+              className="brand-logo"
+            />
           </div>
           
           {/* Desktop Navigation */}
@@ -122,7 +127,6 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/tests" element={<Tests />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/support" element={<Support />} />
         </Routes>
       </main>
     </div>
