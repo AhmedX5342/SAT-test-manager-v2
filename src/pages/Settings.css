@@ -1,0 +1,62 @@
+.settings-page {}
+
+.settings-section {
+  margin-bottom: 36px;
+}
+
+.settings-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.settings-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.settings-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: box-shadow 0.15s;
+}
+
+.settings-card:hover { box-shadow: var(--shadow); }
+
+.settings-card-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+.settings-card-content h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+.settings-card-content p { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+
+.danger-section .section-title { color: var(--error); }
+
+.confirm-delete {
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+
+.confirm-delete p { font-size: 0.85rem; color: var(--error); margin-bottom: 14px; }
+
+.confirm-actions { display: flex; gap: 10px; }
+
+.stats-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.mini-stat {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.mini-stat strong { color: var(--text); font-size: 1.1rem; margin-right: 4px; }
