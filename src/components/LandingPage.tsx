@@ -8,9 +8,28 @@ export default function LandingPage() {
 
   useEffect(() => {
     setIsVisible(true);
+    // Force light mode for landing page only
+    document.documentElement.setAttribute('data-theme', 'light');
+    
+    // Cleanup - restore user's preference when leaving landing page
+    return () => {
+      const savedTheme = localStorage.getItem('darkMode');
+      if (savedTheme === 'true') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else if (savedTheme === 'false') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    };
   }, []);
 
   const handleEnterApp = () => {
+    // Restore user's theme preference before entering app
+    const savedTheme = localStorage.getItem('darkMode');
+    if (savedTheme === 'true') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
     navigate('/app');
   };
 
@@ -151,7 +170,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="footer">
         <div className="container">
-          <p>© {new Date().getFullYear()} American Diploma Test Master. MIT Licensed. Open source.</p>
+          <p>© {new Date().getFullYear()} American Diploma Test Master. MIT Licensed. Open source</p>
         </div>
       </footer>
     </div>

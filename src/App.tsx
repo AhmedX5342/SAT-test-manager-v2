@@ -55,20 +55,24 @@ export default function App() {
   const handleTabChange = (tabId: string, path: string) => {
     setActiveTab(tabId);
     navigate(path);
-    setIsMobileMenuOpen(false); // Close mobile menu after navigation
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
   };
 
   return (
     <div className="app">
       <header className="app-header">
         <div className="header-inner">
-          <div className="brand" onClick={() => handleTabChange('home', '/app')} style={{ cursor: 'pointer' }}>
+          <div className="brand" onClick={() => handleTabChange('home', '/app')}>
             <span className="brand-icon">✦</span>
             <span className="brand-name">American Diploma Test Master</span>
           </div>
           
           {/* Desktop Navigation */}
-          <nav className="tab-nav desktop-nav">
+          <nav className="tab-nav">
             {TABS.map(tab => (
               <button
                 key={tab.id}
@@ -81,19 +85,19 @@ export default function App() {
             ))}
           </nav>
 
-          {/* Mobile Controls */}
-          <div className="mobile-controls">
-            <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)} title="Toggle theme">
-              {darkMode ? '☀️' : '🌙'}
-            </button>
-            <div className="hamburger-wrapper">
-              <Hamburger 
-                toggled={isMobileMenuOpen} 
-                toggle={setIsMobileMenuOpen}
-                size={24}
-                color="currentColor"
-              />
-            </div>
+          {/* Theme Toggle */}
+          <button className="theme-toggle" onClick={toggleDarkMode} title="Toggle theme">
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+
+          {/* Hamburger Menu - Only visible on mobile */}
+          <div className="hamburger-wrapper">
+            <Hamburger 
+              toggled={isMobileMenuOpen} 
+              toggle={setIsMobileMenuOpen}
+              size={24}
+              color="currentColor"
+            />
           </div>
 
           {/* Mobile Navigation Menu */}
