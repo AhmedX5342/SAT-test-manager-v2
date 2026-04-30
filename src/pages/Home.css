@@ -127,3 +127,134 @@
 @media (max-width: 500px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Add to your existing Home.css */
+
+/* Chart Settings Panel */
+.chart-settings-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  animation: slideDown 0.2s ease;
+}
+
+.chart-settings-panel h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.settings-group {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.settings-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 120px;
+}
+
+.settings-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings-btn {
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.settings-btn:hover {
+  background: var(--hover-bg);
+}
+
+.settings-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.settings-input {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-primary);
+  width: 100px;
+  font-size: 0.85rem;
+}
+
+.settings-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.settings-checkboxes {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.settings-checkbox input {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chart-status {
+  font-size: 0.8rem;
+}
+
+.status-warning {
+  color: var(--warning);
+  background: var(--warning-bg);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .settings-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .settings-checkboxes {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .chart-settings-panel {
+    padding: 1rem;
+  }
+}
