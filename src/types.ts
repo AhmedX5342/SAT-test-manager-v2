@@ -1,6 +1,7 @@
 export interface Folder {
   id: string;
   name: string;
+  parentId: string | null;  // Add parentId for nesting
   createdAt: string;
 }
 
@@ -34,16 +35,27 @@ export interface Test {
   maxScaledScore: number | null;
 }
 
+export interface ViewSettings {
+  viewMode: 'grid' | 'list';
+  sortBy: 'name' | 'date' | 'type';
+  sortOrder: 'asc' | 'desc';
+}
+
 export interface DataContextType {
   folders: Folder[];
   tests: Test[];
-  createFolder: (name: string) => Folder;
+  viewSettings: ViewSettings;
+  createFolder: (name: string, parentId: string | null) => Folder;
   deleteFolder: (id: string) => void;
   renameFolder: (id: string, name: string) => void;
+  moveFolder: (folderId: string, targetParentId: string | null) => void;
   addTest: (test: Omit<Test, 'id' | 'createdAt' | 'answers' | 'guessed' | 'requiresStudy' | 'corrections' | 'rawScore' | 'scaledScore' | 'maxScaledScore'>) => Test;
   updateTest: (id: string, updates: Partial<Test>) => void;
   deleteTest: (id: string) => void;
   moveTestToFolder: (testId: string, folderId: string | null) => void;
+  getFolderContents: (folderId: string | null) => { folders: Folder[]; tests: Test[] };
+  getFolderPath: (folderId: string | null) => Folder[];
+  updateViewSettings: (settings: Partial<ViewSettings>) => void;
   importData: (data: { folders?: Folder[]; tests?: Test[] }) => void;
   clearAll: () => void;
 }

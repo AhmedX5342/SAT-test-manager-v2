@@ -1,28 +1,66 @@
 import { createContext, useContext, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { Folder, Test, DataContextType } from '../types';
+import type { Folder, Test, DataContextType, ViewSettings } from '../types';
 
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [folders, setFolders] = useLocalStorage<Folder[]>('sat_folders', []);
   const [tests, setTests] = useLocalStorage<Test[]>('sat_tests', []);
+  const [viewSettings, setViewSettings] = useLocalStorage<ViewSettings>('view_settings', {
+    viewMode: 'grid',
+    sortBy: 'name',
+    sortOrder: 'asc',
+  });
 
-  const createFolder = useCallback((name: string): Folder => {
-    const folder: Folder = { id: crypto.randomUUID(), name, createdAt: new Date().toISOString() };
+  const createFolder = useCallback((name: string, parentId: string | null = null): Folder => {
+    const folder: Folder = { 
+      id: crypto.randomUUID(), 
+      name, 
+      parentId,
+      createdAt: new Date().toISOString() 
+    };
     setFolders(prev => [...prev, folder]);
     return folder;
   }, [setFolders]);
 
   const deleteFolder = useCallback((id: string): void => {
-    setFolders(prev => prev.filter(f => f.id !== id));
-    setTests(prev => prev.map(t => t.folderId === id ? { ...t, folderId: null } : t));
-  }, [setFolders, setTests]);
+    // Delete all subfolders recursively
+    const deleteRecursive = (folderId: string) => {
+      const subFolders = folders.filter(f => f.parentId === folderId);
+      subFolders.forEach(sub => deleteRecursive(sub.id));
+      setFolders(prev => prev.filter(f => f.id !== folderId));
+      // Move tests in this folder to root
+      setTests(prev => prev.map(t => 
+        t.folderId === folderId ? { ...t, folderId: null } : t
+      ));
+    };
+    deleteRecursive(id);
+  }, [folders, setFolders, setTests]);
 
   const renameFolder = useCallback((id: string, name: string): void => {
     setFolders(prev => prev.map(f => f.id === id ? { ...f, name } : f));
   }, [setFolders]);
+
+  const moveFolder = useCallback((folderId: string, targetParentId: string | null): void => {
+    // Prevent circular reference
+    if (targetParentId === folderId) return;
+    
+    // Check if target is a child of the moving folder
+    const isChildFolder = (parentId: string | null, childId: string): boolean => {
+      if (!parentId) return false;
+      const folder = folders.find(f => f.id === parentId);
+      if (folder?.parentId === childId) return true;
+      return folder ? isChildFolder(folder.parentId, childId) : false;
+    };
+    
+    if (isChildFolder(targetParentId, folderId)) return;
+    
+    setFolders(prev => prev.map(f => 
+      f.id === folderId ? { ...f, parentId: targetParentId } : f
+    ));
+  }, [folders, setFolders]);
 
   const addTest = useCallback((test: Omit<Test, 'id' | 'createdAt' | 'answers' | 'guessed' | 'requiresStudy' | 'corrections' | 'rawScore' | 'scaledScore' | 'maxScaledScore'>): Test => {
     const newTest = {
@@ -54,6 +92,51 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTests(prev => prev.map(t => t.id === testId ? { ...t, folderId } : t));
   }, [setTests]);
 
+  const getFolderContents = useCallback((folderId: string | null) => {
+    const subFolders = folders
+      .filter(f => f.parentId === folderId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    
+    const folderTests = tests
+      .filter(t => t.folderId === folderId)
+      .sort((a, b) => {
+        if (viewSettings.sortBy === 'name') {
+          return viewSettings.sortOrder === 'asc' 
+            ? a.name.localeCompare(b.name)
+            : b.name.localeCompare(a.name);
+        } else {
+          return viewSettings.sortOrder === 'asc'
+            ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+      });
+    
+    return { folders: subFolders, tests: folderTests };
+  }, [folders, tests, viewSettings]);
+
+  const getFolderPath = useCallback((folderId: string | null): Folder[] => {
+    if (!folderId) return [];
+    
+    const path: Folder[] = [];
+    let currentId: string | null = folderId;
+    
+    while (currentId) {
+      const folder = folders.find(f => f.id === currentId);
+      if (folder) {
+        path.unshift(folder);
+        currentId = folder.parentId;
+      } else {
+        break;
+      }
+    }
+    
+    return path;
+  }, [folders]);
+
+  const updateViewSettings = useCallback((settings: Partial<ViewSettings>): void => {
+    setViewSettings(prev => ({ ...prev, ...settings }));
+  }, [setViewSettings]);
+
   const importData = useCallback((data: { folders?: Folder[]; tests?: Test[] }): void => {
     if (data.folders) setFolders(data.folders);
     if (data.tests) setTests(data.tests);
@@ -67,13 +150,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const value: DataContextType = {
     folders,
     tests,
+    viewSettings,
     createFolder,
     deleteFolder,
     renameFolder,
+    moveFolder,
     addTest,
     updateTest,
     deleteTest,
     moveTestToFolder,
+    getFolderContents,
+    getFolderPath,
+    updateViewSettings,
     importData,
     clearAll,
   };
