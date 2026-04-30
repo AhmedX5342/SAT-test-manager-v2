@@ -134,13 +134,11 @@ function RenameModal({ test, onSave, onClose }: RenameModalProps) {
 function FolderTree({ 
   folders, 
   currentFolderId, 
-  onSelectFolder,
-  level = 0 
+  onSelectFolder
 }: { 
   folders: Folder[]; 
   currentFolderId: string | null;
   onSelectFolder: (folderId: string | null) => void;
-  level?: number;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   
@@ -173,7 +171,7 @@ function FolderTree({
             {children.length > 0 ? (isExpanded ? '▼' : '▶') : '•'}
           </button>
           <button 
-            className="folder-tree-name"
+            className="folder-tree-name "
             onClick={() => onSelectFolder(folder.id)}
           >
             📁 {folder.name}
@@ -344,7 +342,7 @@ export default function Tests() {
     getFolderPath,
     createFolder,
     deleteFolder,
-    renameFolder,
+    renameFolder,  // ← Now this is used!
     addTest,
     updateTest,
     deleteTest,
@@ -393,16 +391,16 @@ export default function Tests() {
     }
   };
 
-  const handleCreateFolder = (name: string, parentId: string | null) => {
-    createFolder(name, parentId);
+  const handleCreateOrRenameFolder = (name: string, parentId: string | null) => {
+    if (editFolder) {
+      // Rename existing folder
+      renameFolder(editFolder.id, name);
+    } else {
+      // Create new folder
+      createFolder(name, parentId);
+    }
     setShowFolderModal(false);
     setEditFolder(null);
-  };
-
-  const toggleViewMode = () => {
-    updateViewSettings({
-      viewMode: viewSettings.viewMode === 'grid' ? 'list' : 'grid'
-    });
   };
 
   if (takingTest) {
@@ -538,7 +536,7 @@ export default function Tests() {
         <FolderModal
           folder={editFolder}
           parentId={editFolder ? editFolder.parentId : currentFolderId}
-          onSave={handleCreateFolder}
+          onSave={handleCreateOrRenameFolder}  // ← Updated to handle both create and rename
           onClose={() => { setShowFolderModal(false); setEditFolder(null); }}
         />
       )}

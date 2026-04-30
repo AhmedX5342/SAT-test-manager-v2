@@ -11,7 +11,7 @@ interface MoveTestModalProps {
 }
 
 export default function MoveTestModal({ testId, currentFolderId, onClose, onMoved }: MoveTestModalProps) {
-  const { folders, moveTest } = useData();
+  const { folders, moveTestToFolder } = useData(); // Fixed: use moveTestToFolder instead of moveTest
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(currentFolderId);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -31,14 +31,13 @@ export default function MoveTestModal({ testId, currentFolderId, onClose, onMove
 
   const folderTree = buildFolderTree();
   
-  // Filter folders by search
   const filteredFolders = searchTerm
     ? folderTree.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()))
     : folderTree;
 
   const handleSubmit = () => {
     if (selectedFolderId !== currentFolderId) {
-      moveTest(testId, selectedFolderId);
+      moveTestToFolder(testId, selectedFolderId); // Fixed: use moveTestToFolder
     }
     onMoved();
     onClose();
@@ -74,7 +73,6 @@ export default function MoveTestModal({ testId, currentFolderId, onClose, onMove
           </div>
 
           <div className="folder-tree">
-            {/* Root option */}
             <div 
               className={`folder-item ${selectedFolderId === null ? 'selected' : ''}`}
               onClick={() => setSelectedFolderId(null)}
@@ -83,7 +81,6 @@ export default function MoveTestModal({ testId, currentFolderId, onClose, onMove
               <span className="folder-name">Root Directory</span>
             </div>
 
-            {/* Folder tree */}
             {filteredFolders.map(folder => (
               <div
                 key={folder.id}
