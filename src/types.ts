@@ -49,7 +49,7 @@ export interface DataContextType {
   deleteFolder: (id: string) => void;
   renameFolder: (id: string, name: string) => void;
   moveFolder: (folderId: string, targetParentId: string | null) => void;
-  addTest: (test: Omit<Test, 'id' | 'createdAt' | 'answers' | 'guessed' | 'requiresStudy' | 'corrections' | 'rawScore' | 'scaledScore' | 'maxScaledScore'>) => Test;
+  addTest: (test: Omit<Test, 'id' | 'createdAt'>) => Test;
   updateTest: (id: string, updates: Partial<Test>) => void;
   deleteTest: (id: string) => void;
   moveTestToFolder: (testId: string, folderId: string | null) => void;

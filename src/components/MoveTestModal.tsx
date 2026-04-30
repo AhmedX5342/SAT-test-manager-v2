@@ -117,7 +117,6 @@ export default function MoveTestModal({ testId, currentFolderId, onClose, onMove
                     <span className="folder-name">{folder.name}</span>
                   </div>
                   {isExpanded && !searchTerm && children.map(child => {
-                    const childWithLevel = { ...child, level: folder.level + 1 };
                     return (
                       <div
                         key={child.id}
