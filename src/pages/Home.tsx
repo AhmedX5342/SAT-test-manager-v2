@@ -48,7 +48,6 @@ function ScoreChart({ tests, settings }: { tests: Test[]; settings: ChartSetting
   const chartH = height - padT - padB;
 
   // Calculate Y-axis range based on mode
-  let yMin = 0;
   let yMax = 100;
   let yTicks: number[] = [];
   
