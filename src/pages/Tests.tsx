@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useData } from '../context/DataContext';
 import type { Test, Folder } from '../types';
 import TakeTest from '../components/TakeTest';
 import CorrectTest from '../components/CorrectTest';
 import ViewDetails from '../components/ViewDetails';
 import MoveTestModal from '../components/MoveTestModal';
+import DeleteModal from '../components/DeleteModal';
 import './Tests.css';
+
+// ─── New Test Modal ───────────────────────────────────────────────────────────
 
 interface NewTestModalProps {
   folders: Folder[];
@@ -23,12 +26,12 @@ function NewTestModal({ folders, currentFolderId, onStart, onClose }: NewTestMod
 
   const handleStart = () => {
     if (!name.trim() || (typeof numQuestions === 'string' ? !numQuestions : numQuestions < 1)) return;
-    onStart({ 
-      name: name.trim(), 
-      numQuestions: parseInt(numQuestions as string), 
-      timerEnabled, 
-      timerMinutes: parseInt(timerMinutes as string), 
-      folderId: folderId || null 
+    onStart({
+      name: name.trim(),
+      numQuestions: parseInt(numQuestions as string),
+      timerEnabled,
+      timerMinutes: parseInt(timerMinutes as string),
+      folderId: folderId || null,
     });
   };
 
@@ -41,7 +44,7 @@ function NewTestModal({ folders, currentFolderId, onStart, onClose }: NewTestMod
         </div>
         <div className="form-group">
           <label className="form-label">Test Name</label>
-          <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. SAT Math Practice #3" />
+          <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. SAT Math Practice #3" autoFocus />
         </div>
         <div className="form-group">
           <label className="form-label">Number of Questions</label>
@@ -75,6 +78,8 @@ function NewTestModal({ folders, currentFolderId, onStart, onClose }: NewTestMod
   );
 }
 
+// ─── Folder Modal ─────────────────────────────────────────────────────────────
+
 interface FolderModalProps {
   folder?: Folder | null;
   parentId?: string | null;
@@ -92,7 +97,14 @@ function FolderModal({ folder, parentId = null, onSave, onClose }: FolderModalPr
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="form-group">
-          <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Folder name" autoFocus onKeyDown={e => e.key === 'Enter' && name.trim() && onSave(name.trim(), parentId)} />
+          <input
+            className="form-input"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Folder name"
+            autoFocus
+            onKeyDown={e => e.key === 'Enter' && name.trim() && onSave(name.trim(), parentId)}
+          />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
@@ -102,6 +114,8 @@ function FolderModal({ folder, parentId = null, onSave, onClose }: FolderModalPr
     </div>
   );
 }
+
+// ─── Rename Modal ─────────────────────────────────────────────────────────────
 
 interface RenameModalProps {
   test: Test;
@@ -119,7 +133,13 @@ function RenameModal({ test, onSave, onClose }: RenameModalProps) {
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="form-group">
-          <input className="form-input" value={name} onChange={e => setName(e.target.value)} autoFocus onKeyDown={e => e.key === 'Enter' && name.trim() && onSave(name.trim())} />
+          <input
+            className="form-input"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            autoFocus
+            onKeyDown={e => e.key === 'Enter' && name.trim() && onSave(name.trim())}
+          />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
@@ -130,97 +150,126 @@ function RenameModal({ test, onSave, onClose }: RenameModalProps) {
   );
 }
 
-// Component to display folder tree for navigation
-function FolderTree({ 
-  folders, 
-  currentFolderId, 
-  onSelectFolder
-}: { 
-  folders: Folder[]; 
+// ─── Folder Tree Sidebar ──────────────────────────────────────────────────────
+
+function FolderTree({
+  folders,
+  currentFolderId,
+  onSelectFolder,
+}: {
+  folders: Folder[];
   currentFolderId: string | null;
   onSelectFolder: (folderId: string | null) => void;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  
-  const rootFolders = folders.filter(f => !f.parentId);
-  
+
   const toggleExpand = (folderId: string) => {
-    const newExpanded = new Set(expanded);
-    if (newExpanded.has(folderId)) {
-      newExpanded.delete(folderId);
-    } else {
-      newExpanded.add(folderId);
-    }
-    setExpanded(newExpanded);
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
   };
-  
-  const renderFolder = (folder: Folder, currentLevel: number) => {
+
+  const renderFolder = (folder: Folder, level: number) => {
     const children = folders.filter(f => f.parentId === folder.id);
     const isExpanded = expanded.has(folder.id);
-    
     return (
       <div key={folder.id}>
-        <div 
+        <div
           className={`folder-tree-item ${currentFolderId === folder.id ? 'active' : ''}`}
-          style={{ paddingLeft: `${currentLevel * 20 + 8}px` }}
+          style={{ paddingLeft: `${level * 20 + 8}px` }}
         >
-          <button 
-            className="folder-expand-btn"
-            onClick={() => children.length > 0 && toggleExpand(folder.id)}
-          >
+          <button className="folder-expand-btn" onClick={() => children.length > 0 && toggleExpand(folder.id)}>
             {children.length > 0 ? (isExpanded ? '▼' : '▶') : '•'}
           </button>
-          <button 
-            className="folder-tree-name "
-            onClick={() => onSelectFolder(folder.id)}
-          >
+          <button className="folder-tree-name" onClick={() => onSelectFolder(folder.id)}>
             📁 {folder.name}
           </button>
         </div>
-        {isExpanded && children.map(child => renderFolder(child, currentLevel + 1))}
+        {isExpanded && children.map(child => renderFolder(child, level + 1))}
       </div>
     );
   };
-  
+
   return (
     <div className="folder-tree-sidebar">
-      <div 
+      <div
         className={`folder-tree-item ${currentFolderId === null ? 'active' : ''}`}
         onClick={() => onSelectFolder(null)}
       >
         <span className="folder-expand-btn">📂</span>
         <span className="folder-tree-name">All Tests</span>
       </div>
-      {rootFolders.map(folder => renderFolder(folder, 1))}
+      {folders.filter(f => !f.parentId).map(folder => renderFolder(folder, 1))}
     </div>
   );
 }
 
-// Grid view component
-function GridView({ 
-  folders, 
-  tests, 
-  onFolderOpen, 
-  onFolderDelete,
-  onFolderRename,
-  onTestOpen, 
-  onTestDelete,
-  onTestRename,
-  onTestMove,
-  onTestCorrect,
-  onTestDetails
-}: { 
-  folders: Folder[]; 
-  tests: Test[];
-  onFolderOpen: (folderId: string) => void;
-  onFolderDelete: (folderId: string) => void;
-  onFolderRename: (folder: Folder) => void;
-  onTestOpen: (test: Test) => void;
-  onTestDelete: (testId: string) => void;
-  onTestRename: (test: Test) => void;
-  onTestMove: (test: Test) => void;
-  onTestCorrect: (test: Test) => void;
-  onTestDetails: (test: Test) => void;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function scoreLabel(test: Test) {
+  if (test.rawScore === null) return '—';
+  return `${test.rawScore}/${test.numQuestions}`;
+}
+
+function scaledLabel(test: Test) {
+  if (test.scaledScore === null) return '—';
+  return test.maxScaledScore ? `${test.scaledScore}/${test.maxScaledScore}` : `${test.scaledScore}`;
+}
+
+function isCorrected(test: Test) {
+  return test.corrections !== null;
+}
+
+// ─── Action buttons shared by grid + list ─────────────────────────────────────
+
+interface TestActionsProps {
+  test: Test;
+  onOpen: (t: Test) => void;
+  onDelete: (t: Test) => void;
+  onRename: (t: Test) => void;
+  onMove: (t: Test) => void;
+  onCorrect: (t: Test) => void;
+  onDetails: (t: Test) => void;
+  onExportTest: (t: Test) => void;
+}
+
+function TestActionButtons({ test, onOpen, onDelete, onRename, onMove, onCorrect, onDetails, onExportTest }: TestActionsProps) {
+  return (
+    <>
+      <button onClick={() => onOpen(test)} className="btn-icon" title="Take Test">▶ Take</button>
+      <button onClick={() => onDetails(test)} className="btn-icon" title="View Details">👁 View</button>
+      <button onClick={() => onCorrect(test)} className="btn-icon" title="Correct Test">
+        {isCorrected(test) ? '✔ Re-correct' : '✔ Correct'}
+      </button>
+      <button onClick={() => onRename(test)} className="btn-icon" title="Rename">✏️ Rename</button>
+      <button onClick={() => onMove(test)} className="btn-icon" title="Move">📁 Move</button>
+      <button onClick={() => onExportTest(test)} className="btn-icon" title="Export Test">⬇ Export</button>
+      <button onClick={() => onDelete(test)} className="btn-icon danger-action" title="Delete">🗑️ Delete</button>
+    </>
+  );
+}
+
+// ─── Grid View ────────────────────────────────────────────────────────────────
+
+function GridView({
+  folders, tests,
+  onFolderOpen, onFolderDelete, onFolderRename,
+  onTestOpen, onTestDelete, onTestRename, onTestMove, onTestCorrect, onTestDetails, onExportTest,
+}: {
+  folders: Folder[]; tests: Test[];
+  onFolderOpen: (id: string) => void;
+  onFolderDelete: (f: Folder) => void;
+  onFolderRename: (f: Folder) => void;
+  onTestOpen: (t: Test) => void;
+  onTestDelete: (t: Test) => void;
+  onTestRename: (t: Test) => void;
+  onTestMove: (t: Test) => void;
+  onTestCorrect: (t: Test) => void;
+  onTestDetails: (t: Test) => void;
+  onExportTest: (t: Test) => void;
 }) {
   return (
     <div className="explorer-grid">
@@ -231,14 +280,18 @@ function GridView({
             <span className="folder-name">{folder.name}</span>
           </div>
           <div className="folder-actions">
-            <button onClick={() => onFolderRename(folder)} className="btn-icon" title="Rename">✏️</button>
-            <button onClick={() => onFolderDelete(folder.id)} className="btn-icon" title="Delete">🗑️</button>
+            <button onClick={() => onFolderRename(folder)} className="btn-icon" title="Rename">✏️ Rename</button>
+            <button onClick={() => onFolderDelete(folder)} className="btn-icon" title="Delete">🗑️ Delete</button>
           </div>
         </div>
       ))}
-      
+
       {tests.map(test => (
-        <div key={test.id} className="test-card" onDoubleClick={() => onTestOpen(test)}>
+        <div
+          key={test.id}
+          className="test-card"
+          onDoubleClick={() => onTestDetails(test)}   // double-click → view, not take
+        >
           <div className="test-card-content">
             <span className="test-icon">📄</span>
             <span className="test-name">{test.name}</span>
@@ -247,11 +300,16 @@ function GridView({
             )}
           </div>
           <div className="test-actions">
-            <button onClick={() => onTestRename(test)} className="btn-icon" title="Rename">✏️</button>
-            <button onClick={() => onTestMove(test)} className="btn-icon" title="Move">📁</button>
-            <button onClick={() => onTestCorrect(test)} className="btn-icon" title="Correct">🤖</button>
-            <button onClick={() => onTestDetails(test)} className="btn-icon" title="Details">👁️</button>
-            <button onClick={() => onTestDelete(test.id)} className="btn-icon" title="Delete">🗑️</button>
+            <TestActionButtons
+              test={test}
+              onOpen={onTestOpen}
+              onDelete={onTestDelete}
+              onRename={onTestRename}
+              onMove={onTestMove}
+              onCorrect={onTestCorrect}
+              onDetails={onTestDetails}
+              onExportTest={onExportTest}
+            />
           </div>
         </div>
       ))}
@@ -259,31 +317,24 @@ function GridView({
   );
 }
 
-// List view component
-function ListView({ 
-  folders, 
-  tests, 
-  onFolderOpen, 
-  onFolderDelete,
-  onFolderRename,
-  onTestOpen, 
-  onTestDelete,
-  onTestRename,
-  onTestMove,
-  onTestCorrect,
-  onTestDetails
-}: { 
-  folders: Folder[]; 
-  tests: Test[];
-  onFolderOpen: (folderId: string) => void;
-  onFolderDelete: (folderId: string) => void;
-  onFolderRename: (folder: Folder) => void;
-  onTestOpen: (test: Test) => void;
-  onTestDelete: (testId: string) => void;
-  onTestRename: (test: Test) => void;
-  onTestMove: (test: Test) => void;
-  onTestCorrect: (test: Test) => void;
-  onTestDetails: (test: Test) => void;
+// ─── List View ────────────────────────────────────────────────────────────────
+
+function ListView({
+  folders, tests,
+  onFolderOpen, onFolderDelete, onFolderRename,
+  onTestOpen, onTestDelete, onTestRename, onTestMove, onTestCorrect, onTestDetails, onExportTest,
+}: {
+  folders: Folder[]; tests: Test[];
+  onFolderOpen: (id: string) => void;
+  onFolderDelete: (f: Folder) => void;
+  onFolderRename: (f: Folder) => void;
+  onTestOpen: (t: Test) => void;
+  onTestDelete: (t: Test) => void;
+  onTestRename: (t: Test) => void;
+  onTestMove: (t: Test) => void;
+  onTestCorrect: (t: Test) => void;
+  onTestDetails: (t: Test) => void;
+  onExportTest: (t: Test) => void;
 }) {
   return (
     <div className="explorer-list">
@@ -293,7 +344,8 @@ function ListView({
             <th>Name</th>
             <th>Type</th>
             <th>Created</th>
-            <th>Score</th>
+            <th>Raw Score</th>
+            <th>Scaled Score</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -304,24 +356,37 @@ function ListView({
               <td>Folder</td>
               <td>{new Date(folder.createdAt).toLocaleDateString()}</td>
               <td>—</td>
-              <td>
-                <button onClick={() => onFolderRename(folder)} className="btn-icon">✏️</button>
-                <button onClick={() => onFolderDelete(folder.id)} className="btn-icon">🗑️</button>
+              <td>—</td>
+              <td className="actions-cell">
+                <button onClick={() => onFolderRename(folder)} className="btn-icon">✏️ Rename</button>
+                <button onClick={() => onFolderDelete(folder)} className="btn-icon">🗑️ Delete</button>
               </td>
             </tr>
           ))}
           {tests.map(test => (
-            <tr key={test.id} onDoubleClick={() => onTestOpen(test)}>
-              <td><span className="test-icon">📄</span> {test.name}</td>
+            <tr
+              key={test.id}
+              onDoubleClick={() => onTestDetails(test)}   // double-click → view details
+            >
+              <td>
+                <span className="test-icon">📄</span> {test.name}
+                {isCorrected(test) && <span title="Corrected" style={{ marginLeft: 6 }}>✔️</span>}
+              </td>
               <td>Test</td>
               <td>{new Date(test.createdAt).toLocaleDateString()}</td>
-              <td>{test.rawScore !== null ? `${test.rawScore}/${test.numQuestions}` : '—'}</td>
-              <td>
-                <button onClick={() => onTestRename(test)} className="btn-icon">✏️</button>
-                <button onClick={() => onTestMove(test)} className="btn-icon">📁</button>
-                <button onClick={() => onTestCorrect(test)} className="btn-icon">🤖</button>
-                <button onClick={() => onTestDetails(test)} className="btn-icon">👁️</button>
-                <button onClick={() => onTestDelete(test.id)} className="btn-icon">🗑️</button>
+              <td>{scoreLabel(test)}</td>
+              <td>{scaledLabel(test)}</td>
+              <td className="actions-cell">
+                <TestActionButtons
+                  test={test}
+                  onOpen={onTestOpen}
+                  onDelete={onTestDelete}
+                  onRename={onTestRename}
+                  onMove={onTestMove}
+                  onCorrect={onTestCorrect}
+                  onDetails={onTestDetails}
+                  onExportTest={onExportTest}
+                />
               </td>
             </tr>
           ))}
@@ -331,35 +396,39 @@ function ListView({
   );
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function Tests() {
-  const data = useData();
-  const { 
-    folders, 
-    tests, 
-    viewSettings, 
-    updateViewSettings,
-    getFolderContents,
-    getFolderPath,
-    createFolder,
-    deleteFolder,
-    renameFolder,  // ← Now this is used!
-    addTest,
-    updateTest,
-    deleteTest,
-  } = data;
+  const {
+    folders, tests, viewSettings, updateViewSettings,
+    getFolderContents, getFolderPath,
+    createFolder, deleteFolder, renameFolder,
+    addTest, updateTest, deleteTest,
+  } = useData();
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [showNewTest, setShowNewTest] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [editFolder, setEditFolder] = useState<Folder | null>(null);
+
   const [takingTest, setTakingTest] = useState<Test | null>(null);
   const [correctingTest, setCorrectingTest] = useState<Test | null>(null);
   const [viewingTest, setViewingTest] = useState<Test | null>(null);
   const [renamingTest, setRenamingTest] = useState<Test | null>(null);
   const [movingTest, setMovingTest] = useState<Test | null>(null);
 
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<
+    { type: 'test'; item: Test } | { type: 'folder'; item: Folder } | null
+  >(null);
+
+  // Import ref
+  const importRef = useRef<HTMLInputElement>(null);
+
   const { folders: currentFolders, tests: currentTests } = getFolderContents(currentFolderId);
   const folderPath = getFolderPath(currentFolderId);
+
+  // ── handlers ──
 
   const handleStartTest = (config: any) => {
     setShowNewTest(false);
@@ -378,9 +447,6 @@ export default function Tests() {
     if (correctingTest) {
       updateTest(correctingTest.id, data);
       setCorrectingTest(null);
-      if (viewingTest && viewingTest.id === correctingTest.id) {
-        setViewingTest({ ...viewingTest, ...data });
-      }
     }
   };
 
@@ -393,15 +459,60 @@ export default function Tests() {
 
   const handleCreateOrRenameFolder = (name: string, parentId: string | null) => {
     if (editFolder) {
-      // Rename existing folder
       renameFolder(editFolder.id, name);
     } else {
-      // Create new folder
       createFolder(name, parentId);
     }
     setShowFolderModal(false);
     setEditFolder(null);
   };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === 'test') {
+      deleteTest(deleteTarget.item.id);
+    } else {
+      deleteFolder(deleteTarget.item.id);
+    }
+    setDeleteTarget(null);
+  };
+
+  // Export single test
+  const handleExportTest = (test: Test) => {
+    const blob = new Blob([JSON.stringify(test, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${test.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Import single test
+  const handleImportTest = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string);
+        // Accept a single test object or an array of tests
+        const items: Test[] = Array.isArray(parsed) ? parsed : [parsed];
+        items.forEach(item => {
+          // Re-add with a fresh id to avoid collisions
+          const { id: _id, createdAt: _ca, ...rest } = item;
+          addTest({ ...rest, folderId: currentFolderId });
+        });
+      } catch {
+        alert('Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    // reset so same file can be imported again
+    e.target.value = '';
+  };
+
+  // ── render TakeTest fullscreen ──
 
   if (takingTest) {
     return (
@@ -419,23 +530,30 @@ export default function Tests() {
         <h1 className="page-title">Test Explorer</h1>
         <div className="header-actions">
           <div className="view-toggle-group">
-            <button 
+            <button
               className={`view-toggle-btn ${viewSettings.viewMode === 'grid' ? 'active' : ''}`}
               onClick={() => updateViewSettings({ viewMode: 'grid' })}
               title="Grid View"
-            >
-              ⊞
-            </button>
-            <button 
+            >⊞</button>
+            <button
               className={`view-toggle-btn ${viewSettings.viewMode === 'list' ? 'active' : ''}`}
               onClick={() => updateViewSettings({ viewMode: 'list' })}
               title="List View"
-            >
-              ☰
-            </button>
+            >☰</button>
           </div>
           <button className="btn btn-outline" onClick={() => { setEditFolder(null); setShowFolderModal(true); }}>
             📁 New Folder
+          </button>
+          {/* Hidden file input for import */}
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={handleImportTest}
+          />
+          <button className="btn btn-outline" onClick={() => importRef.current?.click()}>
+            ⬆ Import Test
           </button>
           <button className="btn btn-primary" onClick={() => setShowNewTest(true)}>
             + Take Test
@@ -444,32 +562,25 @@ export default function Tests() {
       </div>
 
       <div className="tests-layout">
-        {/* Sidebar with folder tree */}
         <div className="tests-sidebar">
-          <FolderTree 
+          <FolderTree
             folders={folders}
             currentFolderId={currentFolderId}
             onSelectFolder={setCurrentFolderId}
           />
         </div>
 
-        {/* Main content area */}
         <div className="tests-main">
           {/* Breadcrumbs */}
           <div className="breadcrumbs">
-            <button 
+            <button
               className={`breadcrumb-item ${currentFolderId === null ? 'active' : ''}`}
               onClick={() => setCurrentFolderId(null)}
-            >
-              Root
-            </button>
+            >Root</button>
             {folderPath.map(folder => (
               <span key={folder.id}>
                 <span className="breadcrumb-separator">/</span>
-                <button 
-                  onClick={() => setCurrentFolderId(folder.id)}
-                  className="breadcrumb-item"
-                >
+                <button className="breadcrumb-item" onClick={() => setCurrentFolderId(folder.id)}>
                   {folder.name}
                 </button>
               </span>
@@ -482,12 +593,8 @@ export default function Tests() {
               <div className="empty-icon">📁</div>
               <p>This folder is empty</p>
               <div className="empty-actions">
-                <button className="btn btn-outline" onClick={() => { setEditFolder(null); setShowFolderModal(true); }}>
-                  Create Folder
-                </button>
-                <button className="btn btn-primary" onClick={() => setShowNewTest(true)}>
-                  Take Test
-                </button>
+                <button className="btn btn-outline" onClick={() => { setEditFolder(null); setShowFolderModal(true); }}>Create Folder</button>
+                <button className="btn btn-primary" onClick={() => setShowNewTest(true)}>Take Test</button>
               </div>
             </div>
           ) : viewSettings.viewMode === 'grid' ? (
@@ -495,60 +602,63 @@ export default function Tests() {
               folders={currentFolders}
               tests={currentTests}
               onFolderOpen={setCurrentFolderId}
-              onFolderDelete={deleteFolder}
-              onFolderRename={(folder) => { setEditFolder(folder); setShowFolderModal(true); }}
+              onFolderDelete={f => setDeleteTarget({ type: 'folder', item: f })}
+              onFolderRename={f => { setEditFolder(f); setShowFolderModal(true); }}
               onTestOpen={setTakingTest}
-              onTestDelete={deleteTest}
+              onTestDelete={t => setDeleteTarget({ type: 'test', item: t })}
               onTestRename={setRenamingTest}
               onTestMove={setMovingTest}
               onTestCorrect={setCorrectingTest}
               onTestDetails={setViewingTest}
+              onExportTest={handleExportTest}
             />
           ) : (
             <ListView
               folders={currentFolders}
               tests={currentTests}
               onFolderOpen={setCurrentFolderId}
-              onFolderDelete={deleteFolder}
-              onFolderRename={(folder) => { setEditFolder(folder); setShowFolderModal(true); }}
+              onFolderDelete={f => setDeleteTarget({ type: 'folder', item: f })}
+              onFolderRename={f => { setEditFolder(f); setShowFolderModal(true); }}
               onTestOpen={setTakingTest}
-              onTestDelete={deleteTest}
+              onTestDelete={t => setDeleteTarget({ type: 'test', item: t })}
               onTestRename={setRenamingTest}
               onTestMove={setMovingTest}
               onTestCorrect={setCorrectingTest}
               onTestDetails={setViewingTest}
+              onExportTest={handleExportTest}
             />
           )}
         </div>
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
+
       {showNewTest && (
-        <NewTestModal 
-          folders={folders} 
+        <NewTestModal
+          folders={folders}
           currentFolderId={currentFolderId}
-          onStart={handleStartTest} 
-          onClose={() => setShowNewTest(false)} 
+          onStart={handleStartTest}
+          onClose={() => setShowNewTest(false)}
         />
       )}
-      
+
       {showFolderModal && (
         <FolderModal
           folder={editFolder}
           parentId={editFolder ? editFolder.parentId : currentFolderId}
-          onSave={handleCreateOrRenameFolder}  // ← Updated to handle both create and rename
+          onSave={handleCreateOrRenameFolder}
           onClose={() => { setShowFolderModal(false); setEditFolder(null); }}
         />
       )}
-      
+
       {renamingTest && (
         <RenameModal
           test={renamingTest}
-          onSave={(name: string) => { updateTest(renamingTest.id, { name }); setRenamingTest(null); }}
+          onSave={name => { updateTest(renamingTest.id, { name }); setRenamingTest(null); }}
           onClose={() => setRenamingTest(null)}
         />
       )}
-      
+
       {movingTest && (
         <MoveTestModal
           testId={movingTest.id}
@@ -557,7 +667,7 @@ export default function Tests() {
           onMoved={() => setMovingTest(null)}
         />
       )}
-      
+
       {correctingTest && (
         <CorrectTest
           test={correctingTest}
@@ -565,12 +675,21 @@ export default function Tests() {
           onClose={() => setCorrectingTest(null)}
         />
       )}
-      
+
       {viewingTest && (
         <ViewDetails
           test={tests.find(t => t.id === viewingTest.id) || viewingTest}
           onSave={handleSaveDetails}
           onClose={() => setViewingTest(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteModal
+          itemName={deleteTarget.item.name}
+          itemType={deleteTarget.type}
+          onConfirm={confirmDelete}
+          onClose={() => setDeleteTarget(null)}
         />
       )}
     </div>

@@ -11,46 +11,48 @@ interface MoveTestModalProps {
 }
 
 export default function MoveTestModal({ testId, currentFolderId, onClose, onMoved }: MoveTestModalProps) {
-  const { folders, moveTestToFolder } = useData(); // Fixed: use moveTestToFolder instead of moveTest
+  const { folders, moveTestToFolder } = useData();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(currentFolderId);
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+    // Start with all folders expanded
+    return new Set(folders.map(f => f.id));
+  });
 
-  // Build folder tree
-  const buildFolderTree = (parentId: string | null = null, level = 0): (Folder & { level: number })[] => {
+  // Recursive function to get all folder paths
+  const getAllFolders = (parentId: string | null = null, level: number = 0): (Folder & { level: number })[] => {
     const result: (Folder & { level: number })[] = [];
     const children = folders.filter(f => f.parentId === parentId);
     
-    children.forEach(child => {
+    for (const child of children) {
       result.push({ ...child, level });
-      result.push(...buildFolderTree(child.id, level + 1));
-    });
+      result.push(...getAllFolders(child.id, level + 1));
+    }
     
     return result;
   };
 
-  const folderTree = buildFolderTree();
+  const allFolders = getAllFolders();
   
+  // Filter folders based on search
   const filteredFolders = searchTerm
-    ? folderTree.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    : folderTree;
+    ? allFolders.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    : allFolders;
 
-  const handleSubmit = () => {
-    if (selectedFolderId !== currentFolderId) {
-      moveTestToFolder(testId, selectedFolderId); // Fixed: use moveTestToFolder
-    }
-    onMoved();
-    onClose();
+  const toggleExpand = (folderId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
   };
 
-  const toggleFolder = (folderId: string) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderId)) {
-      newExpanded.delete(folderId);
-    } else {
-      newExpanded.add(folderId);
-    }
-    setExpandedFolders(newExpanded);
+  const handleSubmit = () => {
+    moveTestToFolder(testId, selectedFolderId);
+    onMoved();
+    onClose();
   };
 
   return (
@@ -73,34 +75,65 @@ export default function MoveTestModal({ testId, currentFolderId, onClose, onMove
           </div>
 
           <div className="folder-tree">
-            <div 
+            {/* Root option */}
+            <div
               className={`folder-item ${selectedFolderId === null ? 'selected' : ''}`}
               onClick={() => setSelectedFolderId(null)}
             >
-              <span className="folder-icon">📁</span>
+              <span className="folder-expand-spacer" />
+              <span className="folder-icon">📂</span>
               <span className="folder-name">Root Directory</span>
             </div>
 
-            {filteredFolders.map(folder => (
-              <div
-                key={folder.id}
-                className={`folder-item ${selectedFolderId === folder.id ? 'selected' : ''}`}
-                style={{ paddingLeft: `${folder.level * 20 + 20}px` }}
-                onClick={() => setSelectedFolderId(folder.id)}
-              >
-                <button 
-                  className="folder-expand"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFolder(folder.id);
-                  }}
-                >
-                  {expandedFolders.has(folder.id) ? '▼' : '▶'}
-                </button>
-                <span className="folder-icon">📁</span>
-                <span className="folder-name">{folder.name}</span>
-              </div>
-            ))}
+            {/* Render all folders in tree structure */}
+            {filteredFolders.map(folder => {
+              const children = folders.filter(f => f.parentId === folder.id);
+              const isExpanded = expandedFolders.has(folder.id);
+              const isSelected = selectedFolderId === folder.id;
+              
+              // Don't show if searching and folder doesn't match
+              if (searchTerm && !folder.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return null;
+              }
+              
+              return (
+                <div key={folder.id}>
+                  <div
+                    className={`folder-item ${isSelected ? 'selected' : ''}`}
+                    style={{ paddingLeft: `${folder.level * 20 + 20}px` }}
+                    onClick={() => setSelectedFolderId(folder.id)}
+                  >
+                    {children.length > 0 ? (
+                      <button
+                        className="folder-expand"
+                        onClick={e => toggleExpand(folder.id, e)}
+                      >
+                        {isExpanded ? '▼' : '▶'}
+                      </button>
+                    ) : (
+                      <span className="folder-expand-spacer" />
+                    )}
+                    <span className="folder-icon">📁</span>
+                    <span className="folder-name">{folder.name}</span>
+                  </div>
+                  {isExpanded && !searchTerm && children.map(child => {
+                    const childWithLevel = { ...child, level: folder.level + 1 };
+                    return (
+                      <div
+                        key={child.id}
+                        className={`folder-item ${selectedFolderId === child.id ? 'selected' : ''}`}
+                        style={{ paddingLeft: `${(folder.level + 1) * 20 + 20}px` }}
+                        onClick={() => setSelectedFolderId(child.id)}
+                      >
+                        <span className="folder-expand-spacer" />
+                        <span className="folder-icon">📁</span>
+                        <span className="folder-name">{child.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         </div>
 

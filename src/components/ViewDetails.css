@@ -1,6 +1,9 @@
 .details-modal {
-  max-width: 680px;
-  max-height: 88vh;
+  max-width: 92vw;
+  width: 1100px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .details-meta {
@@ -17,7 +20,7 @@
   background: var(--bg3);
   border-radius: var(--radius);
   padding: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .score-item { text-align: center; }
@@ -28,88 +31,141 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
-.manual-toggle {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.manual-hint { font-size: 0.78rem; color: var(--text-muted); }
-
-/* Tag summary */
-.tag-summary {
+.details-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding: 8px 12px;
   background: var(--bg3);
   border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
-.tag-group {
+/* ── Multi-column answers grid ── */
+.answers-grid-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: calc(90vh - 320px);
+  padding: 4px 2px 8px;
+  margin-bottom: 16px;
+}
+
+.answers-column {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 190px;
+  flex: 1 1 190px;
+}
+
+/* ── Each question row ── */
+.answer-row-new {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-}
-
-.tag-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
-
-.q-badge {
-  padding: 2px 7px;
-  border-radius: 99px;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.q-badge.guessed { background: #fef3c7; color: #b45309; }
-.q-badge.study { background: rgba(37,99,201,0.12); color: var(--accent2); }
-
-/* Answers grid */
-.answers-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 400px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 8px;
-  margin-bottom: 16px;
-}
-
-.answer-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  padding: 5px 8px;
   border-radius: 6px;
   background: var(--bg2);
-  font-size: 0.85rem;
-  transition: background 0.1s;
-  flex-wrap: wrap;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+  min-height: 36px;
 }
 
-.answer-row.correct { background: rgba(22,128,60,0.06); }
-.answer-row.wrong { background: rgba(200,30,30,0.06); }
-.answer-row.unanswered { background: var(--bg3); }
+.answer-row-new.wrong {
+  background: rgba(200, 30, 30, 0.06);
+  border-color: rgba(200, 30, 30, 0.25);
+}
 
-.answer-q { font-weight: 700; color: var(--text-muted); width: 32px; font-size: 0.78rem; }
-.answer-user { font-family: var(--mono); font-weight: 700; font-size: 1rem; min-width: 20px; }
-.answer-correct { display: flex; align-items: center; gap: 4px; }
+.answer-q-num {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  width: 28px;
+  flex-shrink: 0;
+}
 
-.tick { color: var(--success); font-weight: 800; font-size: 0.95rem; }
-.cross { color: var(--error); font-weight: 800; font-size: 0.95rem; }
-.correct-ans { font-family: var(--mono); font-weight: 700; color: var(--success); font-size: 0.9rem; }
+.answer-user-ans {
+  font-family: var(--mono, monospace);
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-width: 16px;
+  flex-shrink: 0;
+}
 
-.answer-tags { display: flex; gap: 3px; margin-left: auto; }
+.answer-inline-tags {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+/* Push checkbox to the right */
+.wrong-checkbox-label {
+  margin-left: auto;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.wrong-cb-hidden {
+  display: none;
+}
+
+.wrong-cb-box {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.wrong-cb-box.checked {
+  border-color: var(--error, #dc2626);
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.wrong-x {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--error, #dc2626);
+  line-height: 1;
+}
+
+.wrong-cb-box:hover {
+  border-color: var(--error, #dc2626);
+}
+
+/* Correct answer input */
+.correct-ans-input {
+  width: 72px;
+  padding: 3px 6px;
+  border: 1.5px solid var(--accent, #2563eb);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono, monospace);
+  font-size: 0.82rem;
+  font-weight: 700;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.correct-ans-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+/* Tags */
 .mini-tag {
   width: 18px;
   height: 18px;
@@ -120,52 +176,11 @@
   font-size: 0.65rem;
   font-weight: 800;
 }
+
 .mini-tag.guessed { background: #fef3c7; color: #b45309; }
-.mini-tag.study { background: rgba(37,99,201,0.12); color: var(--accent2); }
+.mini-tag.study { background: rgba(37, 99, 201, 0.12); color: var(--accent2); }
 
-/* Manual override */
-.manual-override {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  flex-wrap: wrap;
-}
-
-.override-cb { display: none; }
-
-.override-x {
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: transparent;
-  transition: all 0.1s;
-  font-weight: 700;
-  user-select: none;
-}
-
-.override-cb:checked + .override-x {
-  border-color: var(--error);
-  background: var(--error-bg);
-  color: var(--error);
-}
-
-.override-note {
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 0.78rem;
-  width: 150px;
-  outline: none;
-}
-
-.override-note:focus { border-color: var(--accent); }
+/* Score chips (used in table) */
+.score-chip { padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+.score-chip.raw { background: var(--bg3); color: var(--text-soft); }
+.score-chip.scaled { background: rgba(37, 99, 201, 0.1); color: var(--accent2); }

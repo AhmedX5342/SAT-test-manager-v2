@@ -4,7 +4,6 @@ import type { Test, Folder, Message } from '../types';
 import './Settings.css';
 
 function exportToExcel(tests: Test[], folders: Folder[]) {
-  // Build CSV content
   const lines: (string | number | boolean)[][] = [['Test Name', 'Date', 'Folder', 'Questions', 'Raw Score', 'Scaled Score', 'Max Scaled', 'Corrected']];
   tests.forEach((t: Test) => {
     const folder = folders.find((f: Folder) => f.id === t.folderId)?.name || '';
@@ -46,12 +45,12 @@ export default function Settings() {
   };
 
   const handleExportJSON = () => {
-    const data = JSON.stringify({ folders, tests }, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
+    const exportData = JSON.stringify({ folders, tests }, null, 2);
+    const blob = new Blob([exportData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sat-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `test-master-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     showMsg('Data exported as JSON successfully.');
@@ -69,11 +68,32 @@ export default function Settings() {
     reader.onload = (ev) => {
       try {
         const result = ev.target?.result as string;
-        const data = JSON.parse(result);
-        importData(data);
-        showMsg('Data imported successfully!');
+        const importedData = JSON.parse(result);
+        
+        // Handle different import formats
+        if (importedData.folders || importedData.tests) {
+          // Full backup format
+          importData(importedData);
+          showMsg(`Imported ${importedData.tests?.length || 0} tests and ${importedData.folders?.length || 0} folders.`);
+        } else if (importedData.id && importedData.name && importedData.numQuestions !== undefined) {
+          // Single test format - add with a new ID to avoid conflicts
+          const { id: _id, createdAt: _ca, ...rest } = importedData;
+          data.addTest({ ...rest, folderId: null });
+          showMsg('Imported 1 test successfully.');
+        } else if (Array.isArray(importedData)) {
+          // Array of tests format
+          importedData.forEach((item: any) => {
+            if (item.id && item.name && item.numQuestions !== undefined) {
+              const { id: _id, createdAt: _ca, ...rest } = item;
+              data.addTest({ ...rest, folderId: null });
+            }
+          });
+          showMsg(`Imported ${importedData.length} tests successfully.`);
+        } else {
+          throw new Error('Invalid format');
+        }
       } catch {
-        showMsg('Invalid JSON file.', 'error');
+        showMsg('Invalid JSON file. Please export a valid backup file.', 'error');
       }
     };
     reader.readAsText(file);

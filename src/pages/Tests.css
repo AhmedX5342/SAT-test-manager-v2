@@ -449,3 +449,52 @@
     padding: 0.5rem;
   }
 }
+
+/* ── Append these rules to your existing Tests.css ── */
+
+/* Action buttons with text labels */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.btn-icon:hover {
+  background: var(--bg3);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-icon.danger-action {
+  color: var(--error, #dc2626);
+  border-color: transparent;
+}
+
+.btn-icon.danger-action:hover {
+  background: var(--error-bg, rgba(220,38,38,0.08));
+  border-color: var(--error, #dc2626);
+  color: var(--error, #dc2626);
+}
+
+/* Table actions cell — wrap buttons */
+.actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-width: 260px;
+}
+
+/* Make list-view rows not too tall when actions wrap */
+.file-table td {
+  vertical-align: middle;
+}

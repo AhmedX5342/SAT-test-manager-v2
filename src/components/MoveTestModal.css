@@ -26,14 +26,19 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem;
+  padding: 0.6rem 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.folder-item:last-child {
+  border-bottom: none;
 }
 
 .folder-item:hover {
-  background: var(--hover-bg);
+  background: var(--hover-bg, var(--bg3));
 }
 
 .folder-item.selected {
@@ -49,20 +54,30 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   padding: 0;
-  width: 20px;
+  width: 18px;
+  flex-shrink: 0;
   color: var(--text-muted);
+  line-height: 1;
 }
 
 .folder-expand:hover {
-  color: var(--text-primary);
+  color: var(--text);
+}
+
+.folder-expand-spacer {
+  display: inline-block;
+  width: 18px;
+  flex-shrink: 0;
 }
 
 .folder-icon {
-  font-size: 1.1rem;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .folder-name {
   flex: 1;
+  font-size: 0.88rem;
 }

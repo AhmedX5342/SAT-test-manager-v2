@@ -1,6 +1,10 @@
-import { useState } from 'react';
-import type { Test, Overrides } from '../types';
+import { useState, useRef, useEffect } from 'react';
+import type { Test } from '../types';
 import './ViewDetails.css';
+
+interface WrongMap {
+  [q: number]: { wrong: boolean; correctAnswer: string };
+}
 
 interface ViewDetailsProps {
   test: Test;
@@ -9,59 +13,103 @@ interface ViewDetailsProps {
 }
 
 export default function ViewDetails({ test, onSave, onClose }: ViewDetailsProps) {
-  const [overrides, setOverrides] = useState<Overrides>({});  // manual wrong answers
-  const [manualMode, setManualMode] = useState(false);
-  const [scaledScore, setScaledScore] = useState<string | number>(test.scaledScore || '');
-  const [maxScaledScore, setMaxScaledScore] = useState<string | number>(test.maxScaledScore || '');
-  const [showScaledForm, setShowScaledForm] = useState(false);
+  // Build initial wrong map from existing corrections
+  const buildInitialWrong = (): WrongMap => {
+    const map: WrongMap = {};
+    if (test.corrections) {
+      Object.entries(test.corrections).forEach(([key, val]) => {
+        if (!val.correct) {
+          map[parseInt(key)] = { wrong: true, correctAnswer: val.correctAnswer || '' };
+        }
+      });
+    }
+    return map;
+  };
 
-  const toggleManualWrong = (q: number) => {
-    setOverrides(prev => {
+  const [wrongMap, setWrongMap] = useState<WrongMap>(buildInitialWrong);
+  const [scaledScore, setScaledScore] = useState<string>(test.scaledScore?.toString() || '');
+  const [maxScaledScore, setMaxScaledScore] = useState<string>(test.maxScaledScore?.toString() || '');
+  const [showScaledForm, setShowScaledForm] = useState(false);
+  // Track which question's answer field to autofocus
+  const [focusedQ, setFocusedQ] = useState<number | null>(null);
+  const inputRefs = useRef<{ [q: number]: HTMLInputElement | null }>({});
+
+  // Autofocus the correct-answer input when a question is marked wrong
+  useEffect(() => {
+    if (focusedQ !== null && inputRefs.current[focusedQ]) {
+      inputRefs.current[focusedQ]?.focus();
+      inputRefs.current[focusedQ]?.select();
+    }
+  }, [focusedQ]);
+
+  const toggleWrong = (q: number) => {
+    setWrongMap(prev => {
       const next = { ...prev };
-      if (next[q] !== undefined) {
+      if (next[q]?.wrong) {
         delete next[q];
+        setFocusedQ(null);
       } else {
-        next[q] = { wrong: true, note: '' };
+        next[q] = { wrong: true, correctAnswer: prev[q]?.correctAnswer || '' };
+        setFocusedQ(q);
       }
       return next;
     });
   };
 
-  const setNote = (q: number, note: string) => {
-    setOverrides(prev => ({ ...prev, [q]: { ...prev[q], note } }));
+  const setCorrectAnswer = (q: number, val: string) => {
+    setWrongMap(prev => ({
+      ...prev,
+      [q]: { ...prev[q], wrong: true, correctAnswer: val },
+    }));
   };
 
-  const computeRawScore = () => {
-    if (!test.corrections && Object.keys(overrides).length === 0) return test.rawScore;
-    // Start from AI corrections, then apply manual overrides
-    let score = test.rawScore !== null ? test.rawScore : 0;
-    // Each override marks a question as wrong
-    // We need to rebuild: start from corrections
-    if (test.corrections) {
-      const correctionMap = { ...test.corrections };
-      // Apply overrides
-      Object.keys(overrides).forEach(qKey => {
-        const q = qKey as unknown as number;
-        const wasCorrect = correctionMap[q]?.correct;
-        if (overrides[q].wrong && wasCorrect) score--;
-        if (!overrides[q].wrong && !wasCorrect) score++;
-      });
-    }
-    return score;
+  const computeRawScore = (): number => {
+    const total = test.numQuestions;
+    const wrongCount = Object.values(wrongMap).filter(v => v.wrong).length;
+    return total - wrongCount;
   };
 
   const handleSave = () => {
-    const newRaw = computeRawScore();
+    // Build new corrections object
+    const newCorrections: Test['corrections'] = {};
+    for (let q = 1; q <= test.numQuestions; q++) {
+      const entry = wrongMap[q];
+      if (entry?.wrong) {
+        newCorrections[q.toString()] = { correct: false, correctAnswer: entry.correctAnswer };
+      } else {
+        newCorrections[q.toString()] = { correct: true, correctAnswer: '' };
+      }
+    }
+
     onSave({
-      rawScore: newRaw,
-      scaledScore: scaledScore ? parseInt(scaledScore as string) : test.scaledScore,
-      maxScaledScore: maxScaledScore ? parseInt(maxScaledScore as string) : test.maxScaledScore,
+      corrections: newCorrections,
+      rawScore: computeRawScore(),
+      scaledScore: scaledScore ? parseInt(scaledScore) : test.scaledScore,
+      maxScaledScore: maxScaledScore ? parseInt(maxScaledScore) : test.maxScaledScore,
     });
     onClose();
   };
 
-  const questions = [...Array(test.numQuestions)].map((_, i) => i + 1);
-  const correctionData = test.corrections || {};
+  const handleExport = () => {
+    const blob = new Blob([JSON.stringify(test, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${test.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const questions = Array.from({ length: test.numQuestions }, (_, i) => i + 1);
+
+  // Split into columns of 10
+  const columns: number[][] = [];
+  for (let i = 0; i < questions.length; i += 10) {
+    columns.push(questions.slice(i, i + 10));
+  }
+
+  const wrongCount = Object.values(wrongMap).filter(v => v.wrong).length;
+  const rawScore = test.numQuestions - wrongCount;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -79,109 +127,105 @@ export default function ViewDetails({ test, onSave, onClose }: ViewDetailsProps)
         {/* Score Summary */}
         <div className="details-scores">
           <div className="score-item">
-            <div className="score-val">{test.rawScore !== null ? `${test.rawScore}/${test.numQuestions}` : 'Uncorrected'}</div>
+            <div className="score-val">{rawScore}/{test.numQuestions}</div>
             <div className="score-lbl">Raw Score</div>
           </div>
-          {test.scaledScore && (
+          {(test.scaledScore || scaledScore) && (
             <div className="score-item">
-              <div className="score-val">{test.scaledScore}{test.maxScaledScore ? `/${test.maxScaledScore}` : ''}</div>
+              <div className="score-val">
+                {scaledScore || test.scaledScore}
+                {(maxScaledScore || test.maxScaledScore) ? `/${maxScaledScore || test.maxScaledScore}` : ''}
+              </div>
               <div className="score-lbl">Scaled Score</div>
             </div>
           )}
           <button className="btn btn-outline btn-sm" onClick={() => setShowScaledForm(!showScaledForm)}>
             {test.scaledScore ? 'Edit Scaled Score' : '+ Add Scaled Score'}
           </button>
+          <button className="btn btn-outline btn-sm" onClick={handleExport}>
+            ⬇ Export Test
+          </button>
         </div>
 
         {showScaledForm && (
           <div className="scaled-form">
-            <input type="number" className="form-input sm" placeholder="Scaled Score (e.g. 720)" value={scaledScore} onChange={e => setScaledScore(e.target.value)} />
+            <input
+              type="number"
+              className="form-input sm"
+              placeholder="Scaled Score (e.g. 720)"
+              value={scaledScore}
+              onChange={e => setScaledScore(e.target.value)}
+            />
             <span>/</span>
-            <input type="number" className="form-input sm" placeholder="Max (e.g. 800)" value={maxScaledScore} onChange={e => setMaxScaledScore(e.target.value)} />
+            <input
+              type="number"
+              className="form-input sm"
+              placeholder="Max (e.g. 800)"
+              value={maxScaledScore}
+              onChange={e => setMaxScaledScore(e.target.value)}
+            />
           </div>
         )}
 
-        {/* Manual correction toggle */}
-        {test.corrections && (
-          <div className="manual-toggle">
-            <button className={`btn ${manualMode ? 'btn-warning' : 'btn-outline'} btn-sm`} onClick={() => setManualMode(!manualMode)}>
-              ✏️ {manualMode ? 'Exit Manual Correction' : 'Correct Manually'}
-            </button>
-            {manualMode && <span className="manual-hint">Check boxes to mark answers as wrong. A text field will appear for notes.</span>}
-          </div>
-        )}
+        <div className="details-hint">
+          Check the ✗ box next to any question you got wrong, then type the correct answer.
+        </div>
 
-        {/* Tag summary */}
-        {(test.guessed?.length > 0 || test.requiresStudy?.length > 0) && (
-          <div className="tag-summary">
-            {test.guessed?.length > 0 && (
-              <div className="tag-group">
-                <span className="tag-label">🎲 Guessed:</span>
-                {test.guessed.map(q => <span key={q} className="q-badge guessed">Q{q}</span>)}
-              </div>
-            )}
-            {test.requiresStudy?.length > 0 && (
-              <div className="tag-group">
-                <span className="tag-label">📚 Requires Study:</span>
-                {test.requiresStudy.map(q => <span key={q} className="q-badge study">Q{q}</span>)}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Questions grid — columns of 10 */}
+        <div className="answers-grid-columns">
+          {columns.map((col, colIdx) => (
+            <div key={colIdx} className="answers-column">
+              {col.map((q: number) => {
+                const userAns = test.answers?.[q];
+                const isWrong = wrongMap[q]?.wrong || false;
+                const correctAnswer = wrongMap[q]?.correctAnswer || '';
+                const isGuessed = test.guessed?.includes(q);
+                const isStudy = test.requiresStudy?.includes(q);
 
-        {/* Answers table */}
-        <div className="answers-grid">
-          {questions.map((q: number) => {
-            const userAns = test.answers[q];
-            const correction = correctionData[q.toString()];
-            const isGuessed = test.guessed?.includes(q);
-            const isStudy = test.requiresStudy?.includes(q);
-            const isOverridden = overrides[q] !== undefined;
-            let status = 'unanswered';
-            if (correction) status = correction.correct ? 'correct' : 'wrong';
-            if (isOverridden) status = overrides[q].wrong ? 'wrong' : 'correct';
+                return (
+                  <div
+                    key={q}
+                    className={`answer-row-new ${isWrong ? 'wrong' : ''}`}
+                  >
+                    <span className="answer-q-num">Q{q}</span>
+                    <span className="answer-user-ans">{userAns || '—'}</span>
 
-            return (
-              <div key={q} className={`answer-row ${status} ${manualMode ? 'manual-mode' : ''}`}>
-                <div className="answer-q">Q{q}</div>
-                <div className="answer-user">{userAns || '—'}</div>
-                {correction && (
-                  <div className="answer-correct">
-                    {status === 'correct' ? <span className="tick">✓</span> : <span className="cross">✗</span>}
-                    {status === 'wrong' && <span className="correct-ans">{correction.correctAnswer}</span>}
-                  </div>
-                )}
-                {(isGuessed || isStudy) && (
-                  <div className="answer-tags">
-                    {isGuessed && <span className="mini-tag guessed">G</span>}
-                    {isStudy && <span className="mini-tag study">S</span>}
-                  </div>
-                )}
-                {manualMode && correction && (
-                  <div className="manual-override">
-                    <input
-                      type="checkbox"
-                      className="override-cb"
-                      checked={isOverridden && overrides[q].wrong}
-                      onChange={() => toggleManualWrong(q)}
-                      id={`override-${q}`}
-                    />
-                    <label htmlFor={`override-${q}`} className="override-x">✗</label>
-                    {isOverridden && (
+                    {/* Tags inline */}
+                    <div className="answer-inline-tags">
+                      {isGuessed && <span className="mini-tag guessed" title="Guessed">G</span>}
+                      {isStudy && <span className="mini-tag study" title="Requires Study">S</span>}
+                    </div>
+
+                    {/* Wrong checkbox */}
+                    <label className="wrong-checkbox-label" title="Mark as wrong">
                       <input
-                        autoFocus
+                        type="checkbox"
+                        className="wrong-cb-hidden"
+                        checked={isWrong}
+                        onChange={() => toggleWrong(q)}
+                      />
+                      <span className={`wrong-cb-box ${isWrong ? 'checked' : ''}`}>
+                        {isWrong && <span className="wrong-x">✗</span>}
+                      </span>
+                    </label>
+
+                    {/* Correct answer input — appears when marked wrong */}
+                    {isWrong && (
+                      <input
+                        ref={el => { inputRefs.current[q] = el; }}
                         type="text"
-                        className="override-note"
-                        placeholder="Note (e.g. correct answer)"
-                        value={overrides[q].note || ''}
-                        onChange={e => setNote(q, e.target.value)}
+                        className="correct-ans-input"
+                        placeholder="Correct ans…"
+                        value={correctAnswer}
+                        onChange={e => setCorrectAnswer(q, e.target.value)}
+                        maxLength={10}
                       />
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         <div className="modal-actions">

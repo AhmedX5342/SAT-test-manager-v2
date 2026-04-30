@@ -26,12 +26,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [setFolders]);
 
   const deleteFolder = useCallback((id: string): void => {
-    // Delete all subfolders recursively
     const deleteRecursive = (folderId: string) => {
       const subFolders = folders.filter(f => f.parentId === folderId);
       subFolders.forEach(sub => deleteRecursive(sub.id));
       setFolders(prev => prev.filter(f => f.id !== folderId));
-      // Move tests in this folder to root
       setTests(prev => prev.map(t => 
         t.folderId === folderId ? { ...t, folderId: null } : t
       ));
@@ -44,10 +42,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [setFolders]);
 
   const moveFolder = useCallback((folderId: string, targetParentId: string | null): void => {
-    // Prevent circular reference
     if (targetParentId === folderId) return;
     
-    // Check if target is a child of the moving folder
     const isChildFolder = (parentId: string | null, childId: string): boolean => {
       if (!parentId) return false;
       const folder = folders.find(f => f.id === parentId);
@@ -138,8 +134,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [setViewSettings]);
 
   const importData = useCallback((data: { folders?: Folder[]; tests?: Test[] }): void => {
-    if (data.folders) setFolders(data.folders);
-    if (data.tests) setTests(data.tests);
+    if (data.folders && data.folders.length) {
+      // Preserve folder structure by keeping parentId as is
+      setFolders(data.folders);
+    }
+    if (data.tests && data.tests.length) {
+      // Preserve test folder assignments
+      setTests(data.tests);
+    }
   }, [setFolders, setTests]);
 
   const clearAll = useCallback((): void => {
