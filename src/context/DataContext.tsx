@@ -15,11 +15,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
 
   const createFolder = useCallback((name: string, parentId: string | null = null): Folder => {
-    const folder: Folder = { 
-      id: crypto.randomUUID(), 
-      name, 
+    const folder: Folder = {
+      id: crypto.randomUUID(),
+      name,
       parentId,
-      createdAt: new Date().toISOString() 
+      createdAt: new Date().toISOString()
     };
     setFolders(prev => [...prev, folder]);
     return folder;
@@ -30,7 +30,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const subFolders = folders.filter(f => f.parentId === folderId);
       subFolders.forEach(sub => deleteRecursive(sub.id));
       setFolders(prev => prev.filter(f => f.id !== folderId));
-      setTests(prev => prev.map(t => 
+      setTests(prev => prev.map(t =>
         t.folderId === folderId ? { ...t, folderId: null } : t
       ));
     };
@@ -43,34 +43,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const moveFolder = useCallback((folderId: string, targetParentId: string | null): void => {
     if (targetParentId === folderId) return;
-    
+
     const isChildFolder = (parentId: string | null, childId: string): boolean => {
       if (!parentId) return false;
       const folder = folders.find(f => f.id === parentId);
       if (folder?.parentId === childId) return true;
       return folder ? isChildFolder(folder.parentId, childId) : false;
     };
-    
+
     if (isChildFolder(targetParentId, folderId)) return;
-    
-    setFolders(prev => prev.map(f => 
+
+    setFolders(prev => prev.map(f =>
       f.id === folderId ? { ...f, parentId: targetParentId } : f
     ));
   }, [folders, setFolders]);
 
-  const addTest = useCallback((test: Omit<Test, 'id' | 'createdAt' | 'answers' | 'guessed' | 'requiresStudy' | 'corrections' | 'rawScore' | 'scaledScore' | 'maxScaledScore'>): Test => {
-    const newTest = {
+  const addTest = useCallback((test: Omit<Test, 'id' | 'createdAt'>): Test => {
+    const newTest: Test = {
       id: crypto.randomUUID(),
-      ...test,
       createdAt: new Date().toISOString(),
-      answers: {},
-      guessed: [],
-      requiresStudy: [],
-      corrections: null,
-      rawScore: null,
-      scaledScore: null,
-      maxScaledScore: null,
-      folderId: test.folderId || null,
+      name: test.name,
+      numQuestions: test.numQuestions,
+      timerEnabled: test.timerEnabled ?? false,
+      timerMinutes: test.timerMinutes ?? 60,
+      folderId: test.folderId ?? null,
+      answers: test.answers ?? {},
+      guessed: test.guessed ?? [],
+      requiresStudy: test.requiresStudy ?? [],
+      corrections: test.corrections ?? null,
+      rawScore: test.rawScore ?? null,
+      scaledScore: test.scaledScore ?? null,
+      maxScaledScore: test.maxScaledScore ?? null,
     };
     setTests(prev => [...prev, newTest]);
     return newTest;
@@ -92,12 +95,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const subFolders = folders
       .filter(f => f.parentId === folderId)
       .sort((a, b) => a.name.localeCompare(b.name));
-    
+
     const folderTests = tests
       .filter(t => t.folderId === folderId)
       .sort((a, b) => {
         if (viewSettings.sortBy === 'name') {
-          return viewSettings.sortOrder === 'asc' 
+          return viewSettings.sortOrder === 'asc'
             ? a.name.localeCompare(b.name)
             : b.name.localeCompare(a.name);
         } else {
@@ -106,16 +109,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
             : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
       });
-    
+
     return { folders: subFolders, tests: folderTests };
   }, [folders, tests, viewSettings]);
 
   const getFolderPath = useCallback((folderId: string | null): Folder[] => {
     if (!folderId) return [];
-    
+
     const path: Folder[] = [];
     let currentId: string | null = folderId;
-    
+
     while (currentId) {
       const folder = folders.find(f => f.id === currentId);
       if (folder) {
@@ -125,7 +128,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         break;
       }
     }
-    
+
     return path;
   }, [folders]);
 
