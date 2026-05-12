@@ -1,6 +1,6 @@
 .details-modal {
-  max-width: 92vw;
-  width: 1100px;
+  max-width: 96vw !important;
+  width: min(1600px, 96vw) !important;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -47,8 +47,10 @@
 /* ── Multi-column answers grid ── */
 .answers-grid-columns {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;      /* ← explicit row */
+  flex-wrap: nowrap;        /* ← prevent wrapping */
   gap: 12px;
+  overflow-x: auto;         /* ← scroll horizontally if needed */
   overflow-y: auto;
   max-height: calc(90vh - 320px);
   padding: 4px 2px 8px;
@@ -59,10 +61,9 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  min-width: 190px;
-  flex: 1 1 190px;
+  width: 190px;             /* ← fixed width */
+  flex: 0 0 190px;          /* ← don't grow or shrink */
 }
-
 /* ── Each question row ── */
 .answer-row-new {
   display: flex;
